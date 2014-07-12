@@ -1,6 +1,6 @@
 {
   "name": "grunt-react-rcs",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Grunt task for compiling RCS styles into CSS.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,7 +11,7 @@
   "author": "Chad Scira <chadvscira@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "react-rcs": "~0.0.0",
+    "react-rcs": "git://github.com/icodeforlove/react-rcs.git",
     "colors": "~0.6.2",
     "promise-object": "~0.1.2",
     "bluebird": "~2.2.1",
