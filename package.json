@@ -11,7 +11,7 @@
   "author": "Chad Scira <chadvscira@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "react-rcs": "~0.0.0",
+    "react-rcs": "git://github.com/icodeforlove/react-rcs.git",
     "colors": "~0.6.2",
     "promise-object": "~0.1.2",
     "bluebird": "~2.2.1",
