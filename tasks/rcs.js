@@ -3,7 +3,7 @@ var fs = require('fs'),
 	glob = require('glob'),
 	path = require('path'),
 	colors = require('colors'),
-	Promise = require('bluebird'),
+	Promise = require('whenplus'),
 	PromiseObject = require('promise-object')(Promise),
 	Cubby = require('cubby'),
 	cache = new Cubby({file: '.rcscache'});
@@ -50,7 +50,11 @@ var RCSTask = PromiseObject.create({
 				fs.appendFileSync($self.outputFile, cachedInfo.source);
 				return $deferred.resolve();
 			} else if (this.outputDir) {
-				return $deferred.resolve();
+				fs.writeFile(file.replace(/.rcs$/, '.css'), cachedInfo.source, function () {
+					$deferred.resolve();
+				});
+
+				return;
 			}
 		}
 
@@ -83,7 +87,8 @@ var RCSTask = PromiseObject.create({
 			cssSource = style.toString();
 
 		if ($self.outputDir) {
-			fs.writeFile($self.outputDir + '/' + componentName + '.css', cssSource, function () {
+
+			fs.writeFile(file.replace(/.rcs$/, '.css'), cssSource, function () {
 				console.log(('built Style("' + componentName + '")').cyan);
 				$deferred.resolve();
 			});
@@ -91,6 +96,7 @@ var RCSTask = PromiseObject.create({
 		} else if ($self.outputFile) {
 			cssSource = '/* Style for component ' + componentName + ' */\n' + cssSource;
 			cssSource += '\n';
+			cssSource = cssSource.trim();
 
 			cache.set(file, {timestamp: fs.statSync(file).mtime.getTime(), source: cssSource});
 			fs.appendFile($self.outputFile, cssSource, function (err) {
@@ -123,6 +129,8 @@ var RCSTask = PromiseObject.create({
 			cssSource += style.toString() + '\n';
 		}
 
+		cssSource = cssSource.trim();
+
 		cache.set(file, {
 			timestamp: fs.statSync(file).mtime.getTime(),
 			source: cssSource
@@ -140,12 +148,14 @@ var RCSTask = PromiseObject.create({
 			});
 		}
 	}
+
+
 });
 
 module.exports = function(grunt) {
-	var config = grunt.config.get('rcs');
+	var config = grunt.config.get('rcs').config;
 
-	if (config.settings) {
+	if (config && config.settings) {
 		// cant figure out how to properly resolve the path
 		var propertiesInit = eval('(function () {' + fs.readFileSync(config.settings, 'utf8') + '; return RCSPropertiesInit;})()');
 		if (typeof propertiesInit == 'function') propertiesInit(RCS.Properties);

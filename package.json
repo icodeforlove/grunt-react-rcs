@@ -1,6 +1,6 @@
 {
   "name": "grunt-react-rcs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Grunt task for compiling RCS styles into CSS.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -8,7 +8,14 @@
   "files": [
     "tasks"
   ],
-  "author": "Chad Scira <chadvscira@gmail.com>",
+  "author": {
+    "name": "Chad Scira",
+    "email": "chadvscira@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/icodeforlove/grunt-react-rcs.git"
+  },
   "license": "MIT",
   "dependencies": {
     "react-rcs": "git://github.com/icodeforlove/react-rcs.git",
@@ -17,5 +24,6 @@
     "bluebird": "~2.2.1",
     "cubby": "~0.0.3",
     "glob": "~4.0.4"
-  }
+  },
+  "readme": "ERROR: No README data found!"
 }
