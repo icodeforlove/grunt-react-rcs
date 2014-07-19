@@ -19,8 +19,9 @@ The basic usage is generating CSS files next to your RCS files, this is mainly g
 ```javascript
 rcs: {
 	build: {
-		src: ['tmp/output/**/*.rcs'],
-		dest: 'tmp/output/'
+		files: [
+			{expand: true, cwd: 'scripts/', src: ['**/*.rcs'], dest: 'build/'}
+		]
 	}
 }
 ```
@@ -34,8 +35,9 @@ rcs: {
 	},
 
 	build: {
-		src: ['tmp/output/**/*.rcs'],
-		dest: 'tmp/output/'
+		files: [
+			{expand: true, cwd: 'scripts/', src: ['**/*.rcs'], dest: 'build/'}
+		]
 	}
 }
 ```

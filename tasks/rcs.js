@@ -6,18 +6,14 @@ var fs = require('fs'),
 	Promise = require('whenplus'),
 	PromiseObject = require('promise-object')(Promise),
 	Cubby = require('cubby'),
-	cache = new Cubby({file: '.rcscache'});
+	cache = new Cubby({file: '.rcscache'}),
+	path = require('path');
 
 var RCSTask = PromiseObject.create({
 	initialize: function (files, dest, callback) {
 		fs.lstat(dest, function (error, stat) {
-			if (!error && stat.isDirectory()) {
-				this.outputDir = dest;
-			} else if (error || stat.isFile()) {
-				this.outputFile = dest;
-
-				fs.writeFileSync(dest, '');
-			}
+			this.outputFile = dest.replace(/.rcs$/, '.css');
+			fs.writeFileSync(dest, '');
 			
 			this.files = files;
 
@@ -27,8 +23,22 @@ var RCSTask = PromiseObject.create({
 		}.bind(this));
 	},
 
-	$compile: function ($deferred, options) {
-		var instance = new RCSTask(options.src, options.dest, function () {
+	$compileFilePairs: function ($deferred, $class, filePairs) {
+		// make all dirs needed
+		var dirs = $class.getAllDirsFromFilePairs(filePairs);
+		dirs.forEach(function (dir) {
+			if (!fs.existsSync(dir)) {
+				fs.mkdirSync(dir);
+			}
+		});
+
+		// compile all file pairs
+		Promise.map(filePairs, $class.compileFilePair).done($deferred.resolve, $deferred.reject);
+	},
+
+
+	$compileFilePair: function ($deferred, filePair) {
+		var instance = new RCSTask(filePair.src, filePair.dest, function () {
 			$deferred.resolve();
 		});
 	},
@@ -46,15 +56,9 @@ var RCSTask = PromiseObject.create({
 			var lastChanged = fs.statSync(file).mtime.getTime(),
 				changed = lastChanged != cachedInfo.timestamp;
 
-			if (this.outputFile && !changed) {
+			if (!changed) {
 				fs.appendFileSync($self.outputFile, cachedInfo.source);
 				return $deferred.resolve();
-			} else if (this.outputDir) {
-				fs.writeFile(file.replace(/.rcs$/, '.css'), cachedInfo.source, function () {
-					$deferred.resolve();
-				});
-
-				return;
 			}
 		}
 
@@ -83,27 +87,18 @@ var RCSTask = PromiseObject.create({
 
 	processSingleComponent: function ($deferred, $self, file, source) {
 		var componentName = path.basename(file, '.rcs'),
-			style = new RCS.Style(componentName, source, {}),
-			cssSource = style.toString();
+			style = new RCS.Style(componentName, source, {});
 
-		if ($self.outputDir) {
+		var cssSource = '/* Style for component ' + componentName + ' */\n';
+		cssSource += style.toString();
+		cssSource += '\n';
+		cssSource = cssSource.trim();
 
-			fs.writeFile(file.replace(/.rcs$/, '.css'), cssSource, function () {
-				console.log(('built Style("' + componentName + '")').cyan);
-				$deferred.resolve();
-			});
-			cache.set(file, {timestamp: fs.statSync(file).mtime.getTime(), source: cssSource});
-		} else if ($self.outputFile) {
-			cssSource = '/* Style for component ' + componentName + ' */\n' + cssSource;
-			cssSource += '\n';
-			cssSource = cssSource.trim();
-
-			cache.set(file, {timestamp: fs.statSync(file).mtime.getTime(), source: cssSource});
-			fs.appendFile($self.outputFile, cssSource, function (err) {
-				console.log(('built Style("' + componentName + '")').cyan);
-				$deferred.resolve();
-			});
-		}
+		cache.set(file, {timestamp: fs.statSync(file).mtime.getTime(), source: cssSource});
+		fs.appendFile($self.outputFile, cssSource, function (err) {
+			console.log(('built Style("' + componentName + '")').cyan);
+			$deferred.resolve();
+		});
 	},
 
 	processMultipleComponents: function ($deferred, $self, file, source) {
@@ -136,24 +131,41 @@ var RCSTask = PromiseObject.create({
 			source: cssSource
 		});
 
-		if ($self.outputDir) {
-			fs.writeFile($self.outputDir + '/' + path.basename(file, '.rcs') + '.css', cssSource, function () {
-				styles.forEach(function (componentName) {
-					$deferred.resolve();
-				});
+		fs.appendFile($self.outputFile, cssSource, function (err) {
+			$deferred.resolve();
+		});
+	},
+
+	$getAllDirsFromFilePairs: function ($class, filePairs) {
+		var dirs = [],
+			files = $class.getAllFilesFromFilePairs(filePairs);
+		
+		files.forEach(function (filePath) {
+			var isDir = filePath.match(/\/$/);
+
+			filePath.split('/').forEach(function (part, index, array) {
+				if (part && (index !== array.length-1 || isDir && index === array.length-1)) {
+					var dir = array.slice(0, index + 1).join('/') + '/';
+					if (dirs.indexOf(dir) === -1) {
+						dirs.push(array.slice(0, index + 1).join('/') + '/');
+					}
+				}
 			});
-		} else if ($self.outputFile) {
-			fs.appendFile($self.outputFile, cssSource, function (err) {
-				$deferred.resolve();
-			});
-		}
+		});
+		
+		return dirs;
+	},
+
+	$getAllFilesFromFilePairs: function (filePairs) {
+		return Array.prototype.concat.apply([], filePairs.map(function (file) {
+			return file.dest;
+		}));
 	}
-
-
 });
 
+
 module.exports = function(grunt) {
-	var config = grunt.config.get('rcs').config;
+	var config = grunt.config.get('rcs').options;
 
 	if (config && config.settings) {
 		// cant figure out how to properly resolve the path
@@ -162,10 +174,9 @@ module.exports = function(grunt) {
 	}
 
 	grunt.registerMultiTask('rcs', 'Compile rcs files to css.', function(target) {
-		var callback = this.async(),
-			files = [];
+		var callback = this.async();
 
-		Promise.map(this.files, RCSTask.compile).done(function () {
+		RCSTask.compileFilePairs(this.files).done(function () {
 			callback();
 		});
 	});
