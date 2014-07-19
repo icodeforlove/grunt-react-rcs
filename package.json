@@ -1,6 +1,6 @@
 {
   "name": "grunt-react-rcs",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Grunt task for compiling RCS styles into CSS.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

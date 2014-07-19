@@ -168,8 +168,7 @@ module.exports = function(grunt) {
 	var config = grunt.config.get('rcs').options;
 
 	if (config && config.settings) {
-		// cant figure out how to properly resolve the path
-		var propertiesInit = eval('(function () {' + fs.readFileSync(config.settings, 'utf8') + '; return RCSPropertiesInit;})()');
+		var propertiesInit = require(process.cwd() + '/' + config.settings);
 		if (typeof propertiesInit == 'function') propertiesInit(RCS.Properties);
 	}
 
